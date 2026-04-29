@@ -1,57 +1,53 @@
-// Day 11: Fibonacci Iterator and ChunkedIterator
+// Day 10: Graph
 //
-// Implement custom iterators: an infinite Fibonacci sequence generator and a
-// chunking adapter that groups elements from any iterator.
+// Implement a directed graph with cycle detection.
 //
 // Learning goals:
-//   - Implementing the `Iterator` trait for custom types
-//   - Working with `Item` associated type
-//   - Generic iterator adapters
-//   - Combining multiple iterators
+//   - Adjacency list representation with HashMap and Vec
+//   - Graph algorithms (DFS-based cycle detection)
+//   - Custom error types
+//   - Efficient neighbor lookups
 
-/// An iterator that yields Fibonacci numbers starting from 0, 1.
-/// Sequence: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, ...
-pub struct Fibonacci {
-    curr: u64,
-    next: u64,
+use std::collections::HashMap;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum GraphError {
+    NodeNotFound(usize),
 }
 
-impl Fibonacci {
+pub struct Graph {
+    // Define your fields here (e.g., adjacency list, node counter)
+    _priv: (),
+}
+
+impl Graph {
     pub fn new() -> Self {
         todo!("Implement new")
     }
-}
 
-impl Iterator for Fibonacci {
-    type Item = u64;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!("Implement Iterator::next for Fibonacci")
+    /// Adds a new node and returns its ID. Node IDs start at 0 and increment.
+    pub fn add_node(&mut self) -> usize {
+        todo!("Implement add_node")
     }
-}
 
-/// An iterator adapter that groups the output of another iterator into chunks
-/// of the given size. If the inner iterator has fewer elements left than the
-/// chunk size, the final chunk contains the remaining elements.
-///
-/// An empty inner iterator yields no chunks (not even an empty one).
-pub struct ChunkedIterator<I: Iterator> {
-    // Define your fields here
-    inner: I,
-    chunk_size: usize,
-}
-
-impl<I: Iterator> ChunkedIterator<I> {
-    pub fn new(iter: I, chunk_size: usize) -> Self {
-        todo!("Implement new")
+    /// Adds a directed edge from `from` to `to`.
+    pub fn add_edge(&mut self, from: usize, to: usize) -> Result<(), GraphError> {
+        todo!("Implement add_edge")
     }
-}
 
-impl<I: Iterator> Iterator for ChunkedIterator<I> {
-    type Item = Vec<I::Item>;
+    /// Returns the neighbor IDs of the given node.
+    pub fn neighbors(&self, node: usize) -> Result<Vec<usize>, GraphError> {
+        todo!("Implement neighbors")
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!("Implement Iterator::next for ChunkedIterator")
+    /// Returns true if the graph contains at least one cycle.
+    pub fn has_cycle(&self) -> bool {
+        todo!("Implement has_cycle")
+    }
+
+    /// Returns the total number of nodes in the graph.
+    pub fn node_count(&self) -> usize {
+        todo!("Implement node_count")
     }
 }
 
@@ -60,84 +56,131 @@ mod tests {
     use super::*;
 
     #[test]
-    fn fibonacci_first_ten() {
-        let fib: Vec<u64> = Fibonacci::new().take(10).collect();
-        assert_eq!(fib, vec![0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
+    fn add_node_returns_incrementing_ids_from_zero() {
+        let mut g = Graph::new();
+        assert_eq!(g.add_node(), 0);
+        assert_eq!(g.add_node(), 1);
+        assert_eq!(g.add_node(), 2);
     }
 
     #[test]
-    fn fibonacci_first_two() {
-        let fib: Vec<u64> = Fibonacci::new().take(2).collect();
-        assert_eq!(fib, vec![0, 1]);
+    fn add_edge_nonexistent_from_returns_error() {
+        let mut g = Graph::new();
+        g.add_node(); // only node 0
+        let result = g.add_edge(42, 0);
+        assert_eq!(result, Err(GraphError::NodeNotFound(42)));
     }
 
     #[test]
-    fn fibonacci_is_infinite() {
-        // Should be able to take a large number without panicking
-        let count = Fibonacci::new().take(100).count();
-        assert_eq!(count, 100);
+    fn add_edge_nonexistent_to_returns_error() {
+        let mut g = Graph::new();
+        g.add_node(); // only node 0
+        let result = g.add_edge(0, 42);
+        assert_eq!(result, Err(GraphError::NodeNotFound(42)));
     }
 
     #[test]
-    fn chunked_iterator_basic() {
-        let data = vec![1, 2, 3, 4, 5];
-        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 3).collect();
-        assert_eq!(chunks, vec![vec![1, 2, 3], vec![4, 5]]);
+    fn neighbors_returns_correct_ids() {
+        let mut g = Graph::new();
+        g.add_node(); // 0
+        g.add_node(); // 1
+        g.add_node(); // 2
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(0, 2).unwrap();
+
+        let mut n = g.neighbors(0).unwrap();
+        n.sort();
+        assert_eq!(n, vec![1, 2]);
     }
 
     #[test]
-    fn chunk_size_of_one_yields_single_element_vecs() {
-        let data = vec!["a", "b", "c", "d"];
-        let chunks: Vec<Vec<&str>> = ChunkedIterator::new(data.into_iter(), 1).collect();
-        assert_eq!(chunks, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"]]);
+    fn neighbors_on_node_with_no_edges_returns_empty() {
+        let mut g = Graph::new();
+        g.add_node(); // 0
+        g.add_node(); // 1
+        g.add_edge(0, 1).unwrap();
+
+        // Node 1 has no outgoing edges
+        assert_eq!(g.neighbors(1).unwrap(), vec![]);
     }
 
     #[test]
-    fn chunk_size_larger_than_input_yields_one_chunk() {
-        let data = vec![1, 2, 3];
-        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 10).collect();
-        assert_eq!(chunks, vec![vec![1, 2, 3]]);
+    fn neighbors_nonexistent_node_returns_error() {
+        let g = Graph::new();
+        assert_eq!(g.neighbors(42), Err(GraphError::NodeNotFound(42)));
     }
 
     #[test]
-    fn empty_iterator_yields_no_chunks() {
-        let data: Vec<i32> = vec![];
-        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 3).collect();
-        assert_eq!(chunks, Vec::<Vec<i32>>::new());
+    fn has_cycle_on_empty_graph_is_false() {
+        let g = Graph::new();
+        assert!(!g.has_cycle());
     }
 
     #[test]
-    fn chunk_iterator_works_with_vec_iterator() {
-        // Verify it works with std::slice::Iter
-        let data = vec!['a', 'b', 'c', 'd', 'e', 'f'];
-        let chunks: Vec<Vec<&char>> = ChunkedIterator::new(data.iter(), 2).collect();
-        assert_eq!(chunks, vec![
-            vec![&'a', &'b'],
-            vec![&'c', &'d'],
-            vec![&'e', &'f'],
-        ]);
+    fn has_cycle_single_node_no_self_edge_is_false() {
+        let mut g = Graph::new();
+        g.add_node(); // node 0, no edges
+        assert!(!g.has_cycle());
     }
 
     #[test]
-    fn combined_fibonacci_chunked_by_three() {
-        let fib = Fibonacci::new();
-        let chunked = ChunkedIterator::new(fib, 3);
-        let first_four: Vec<Vec<u64>> = chunked.take(4).collect();
-        assert_eq!(
-            first_four,
-            vec![
-                vec![0, 1, 1],
-                vec![2, 3, 5],
-                vec![8, 13, 21],
-                vec![34],
-            ]
-        );
+    fn has_cycle_linear_chain_is_false() {
+        let mut g = Graph::new();
+        // A -> B -> C
+        g.add_node(); // 0
+        g.add_node(); // 1
+        g.add_node(); // 2
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        assert!(!g.has_cycle());
     }
 
     #[test]
-    fn chunked_iterator_exact_multiple() {
-        let data = vec![1, 2, 3, 4, 5, 6];
-        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 2).collect();
-        assert_eq!(chunks, vec![vec![1, 2], vec![3, 4], vec![5, 6]]);
+    fn has_cycle_triangle_is_true() {
+        let mut g = Graph::new();
+        // A -> B -> C -> A
+        g.add_node(); // 0
+        g.add_node(); // 1
+        g.add_node(); // 2
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 0).unwrap();
+        assert!(g.has_cycle());
+    }
+
+    #[test]
+    fn has_cycle_self_loop_is_true() {
+        let mut g = Graph::new();
+        g.add_node(); // 0
+        g.add_edge(0, 0).unwrap();
+        assert!(g.has_cycle());
+    }
+
+    #[test]
+    fn has_cycle_multiple_components() {
+        // Component 1: A -> B (no cycle)
+        // Component 2: C -> D -> C (cycle)
+        let mut g = Graph::new();
+        g.add_node(); // 0 (A)
+        g.add_node(); // 1 (B)
+        g.add_node(); // 2 (C)
+        g.add_node(); // 3 (D)
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(2, 3).unwrap();
+        g.add_edge(3, 2).unwrap();
+        assert!(g.has_cycle());
+    }
+
+    #[test]
+    fn node_count_returns_correct_count() {
+        let mut g = Graph::new();
+        assert_eq!(g.node_count(), 0);
+
+        g.add_node();
+        assert_eq!(g.node_count(), 1);
+
+        g.add_node();
+        g.add_node();
+        assert_eq!(g.node_count(), 3);
     }
 }

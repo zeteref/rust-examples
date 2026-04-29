@@ -1,145 +1,143 @@
-// Day 13: Declarative Macros
+// Day 11: Fibonacci Iterator and ChunkedIterator
 //
-// Write two declarative macros: `assert_between!` for range assertions and
-// `hashmap!` for concise HashMap construction.
+// Implement custom iterators: an infinite Fibonacci sequence generator and a
+// chunking adapter that groups elements from any iterator.
 //
 // Learning goals:
-//   - `macro_rules!` syntax
-//   - Repetition patterns (`$()*`, `$(),*`)
-//   - Macro hygiene and scoping
-//   - Working with `std::fmt::Debug` and `std::cmp::PartialOrd` bounds
+//   - Implementing the `Iterator` trait for custom types
+//   - Working with `Item` associated type
+//   - Generic iterator adapters
+//   - Combining multiple iterators
 
-/// Asserts that a value is within an inclusive range [low, high].
-///
-/// Panics with a descriptive message if the value is outside the range.
-///
-/// # Examples
-/// ```
-/// assert_between!(5, 1, 10);  // passes
-/// assert_between!(0, 1, 10);  // panics
-/// ```
-///
-/// Works with any type implementing `PartialOrd + Debug`.
-macro_rules! assert_between {
-    ($val:expr, $low:expr, $high:expr) => {
-        todo!("Implement assert_between! macro")
-    };
+/// An iterator that yields Fibonacci numbers starting from 0, 1.
+/// Sequence: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, ...
+pub struct Fibonacci {
+    curr: u64,
+    next: u64,
 }
 
-/// Creates a HashMap from a list of key-value pairs.
+impl Fibonacci {
+    pub fn new() -> Self {
+        todo!("Implement new")
+    }
+}
+
+impl Iterator for Fibonacci {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!("Implement Iterator::next for Fibonacci")
+    }
+}
+
+/// An iterator adapter that groups the output of another iterator into chunks
+/// of the given size. If the inner iterator has fewer elements left than the
+/// chunk size, the final chunk contains the remaining elements.
 ///
-/// # Examples
-/// ```
-/// let map = hashmap!{ "a" => 1, "b" => 2 };
-/// assert_eq!(map["a"], 1);
-/// ```
-///
-/// The result type is `HashMap<K, V>`, where K and V are inferred.
-/// Supports empty maps: `hashmap!{}`
-macro_rules! hashmap {
-    {} => {
-        todo!("Implement empty hashmap! case")
-    };
-    ($($key:expr => $val:expr),+ $(,)?) => {
-        todo!("Implement hashmap! macro for key-value pairs")
-    };
+/// An empty inner iterator yields no chunks (not even an empty one).
+pub struct ChunkedIterator<I: Iterator> {
+    // Define your fields here
+    inner: I,
+    chunk_size: usize,
+}
+
+impl<I: Iterator> ChunkedIterator<I> {
+    pub fn new(iter: I, chunk_size: usize) -> Self {
+        todo!("Implement new")
+    }
+}
+
+impl<I: Iterator> Iterator for ChunkedIterator<I> {
+    type Item = Vec<I::Item>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!("Implement Iterator::next for ChunkedIterator")
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     #[test]
-    fn assert_between_value_in_range_does_not_panic() {
-        assert_between!(5, 1, 10);
+    fn fibonacci_first_ten() {
+        let fib: Vec<u64> = Fibonacci::new().take(10).collect();
+        assert_eq!(fib, vec![0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
     }
 
     #[test]
-    fn assert_between_value_at_lower_bound_does_not_panic() {
-        assert_between!(1, 1, 10);
+    fn fibonacci_first_two() {
+        let fib: Vec<u64> = Fibonacci::new().take(2).collect();
+        assert_eq!(fib, vec![0, 1]);
     }
 
     #[test]
-    fn assert_between_value_at_upper_bound_does_not_panic() {
-        assert_between!(10, 1, 10);
+    fn fibonacci_is_infinite() {
+        // Should be able to take a large number without panicking
+        let count = Fibonacci::new().take(100).count();
+        assert_eq!(count, 100);
     }
 
     #[test]
-    #[should_panic]
-    fn assert_between_below_range_panics() {
-        assert_between!(0, 1, 10);
+    fn chunked_iterator_basic() {
+        let data = vec![1, 2, 3, 4, 5];
+        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 3).collect();
+        assert_eq!(chunks, vec![vec![1, 2, 3], vec![4, 5]]);
     }
 
     #[test]
-    #[should_panic]
-    fn assert_between_above_range_panics() {
-        assert_between!(11, 1, 10);
+    fn chunk_size_of_one_yields_single_element_vecs() {
+        let data = vec!["a", "b", "c", "d"];
+        let chunks: Vec<Vec<&str>> = ChunkedIterator::new(data.into_iter(), 1).collect();
+        assert_eq!(chunks, vec![vec!["a"], vec!["b"], vec!["c"], vec!["d"]]);
     }
 
     #[test]
-    fn assert_between_works_with_f64() {
-        assert_between!(5.5f64, 1.0, 10.0);
+    fn chunk_size_larger_than_input_yields_one_chunk() {
+        let data = vec![1, 2, 3];
+        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 10).collect();
+        assert_eq!(chunks, vec![vec![1, 2, 3]]);
     }
 
     #[test]
-    #[should_panic]
-    fn assert_between_fails_with_f64_below() {
-        assert_between!(0.5f64, 1.0, 10.0);
+    fn empty_iterator_yields_no_chunks() {
+        let data: Vec<i32> = vec![];
+        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 3).collect();
+        assert_eq!(chunks, Vec::<Vec<i32>>::new());
     }
 
     #[test]
-    fn hashmap_creates_correct_map() {
-        let map: HashMap<&str, i32> = hashmap! { "a" => 1, "b" => 2 };
-        assert_eq!(map.len(), 2);
-        assert_eq!(map["a"], 1);
-        assert_eq!(map["b"], 2);
+    fn chunk_iterator_works_with_vec_iterator() {
+        // Verify it works with std::slice::Iter
+        let data = vec!['a', 'b', 'c', 'd', 'e', 'f'];
+        let chunks: Vec<Vec<&char>> = ChunkedIterator::new(data.iter(), 2).collect();
+        assert_eq!(chunks, vec![
+            vec![&'a', &'b'],
+            vec![&'c', &'d'],
+            vec![&'e', &'f'],
+        ]);
     }
 
     #[test]
-    fn hashmap_empty_creates_empty_map() {
-        let map: HashMap<&str, i32> = hashmap! {};
-        assert!(map.is_empty());
+    fn combined_fibonacci_chunked_by_three() {
+        let fib = Fibonacci::new();
+        let chunked = ChunkedIterator::new(fib, 3);
+        let first_four: Vec<Vec<u64>> = chunked.take(4).collect();
+        assert_eq!(
+            first_four,
+            vec![
+                vec![0, 1, 1],
+                vec![2, 3, 5],
+                vec![8, 13, 21],
+                vec![34],
+            ]
+        );
     }
 
     #[test]
-    fn hashmap_works_with_string_keys() {
-        let map: HashMap<String, i32> = hashmap! {
-            String::from("hello") => 42,
-            String::from("world") => 100,
-        };
-        assert_eq!(map[&String::from("hello")], 42);
-        assert_eq!(map[&String::from("world")], 100);
-    }
-
-    #[test]
-    fn hashmap_works_with_integer_keys() {
-        let map: HashMap<i32, &str> = hashmap! { 1 => "one", 2 => "two", 3 => "three" };
-        assert_eq!(map.len(), 3);
-        assert_eq!(map[&1], "one");
-    }
-
-    #[test]
-    fn hashmap_works_with_complex_values() {
-        let map: HashMap<&str, Vec<&str>> = hashmap! {
-            "nums" => vec!["1", "2", "3"],
-            "letters" => vec!["a", "b", "c"],
-        };
-        assert_eq!(map["nums"], vec!["1", "2", "3"]);
-        assert_eq!(map["letters"], vec!["a", "b", "c"]);
-    }
-
-    #[test]
-    fn hashmap_type_is_hashmap_not_newtype() {
-        let map = hashmap! { 'x' => 1 };
-        // This must compile—verifies the type is HashMap, not a wrapper
-        let _: HashMap<char, i32> = map;
-    }
-
-    #[test]
-    fn hashmap_trailing_comma_is_accepted() {
-        let map: HashMap<&str, i32> = hashmap! { "a" => 1, };
-        assert_eq!(map.len(), 1);
-        assert_eq!(map["a"], 1);
+    fn chunked_iterator_exact_multiple() {
+        let data = vec![1, 2, 3, 4, 5, 6];
+        let chunks: Vec<Vec<i32>> = ChunkedIterator::new(data.into_iter(), 2).collect();
+        assert_eq!(chunks, vec![vec![1, 2], vec![3, 4], vec![5, 6]]);
     }
 }
