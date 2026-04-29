@@ -57,7 +57,8 @@ mod tests {
 
     #[test]
     fn process_numbers_with_negatives() {
-        assert_eq!(process_numbers(&[-4, -3, -2, -1, 0, 1, 2]), vec![16, 4, 0]);
+        // evens: -4, -2, 0, 2 -> squares: 16, 4, 0, 4 -> descending: 16, 4, 4, 0
+        assert_eq!(process_numbers(&[-4, -3, -2, -1, 0, 1, 2]), vec![16, 4, 4, 0]);
     }
 
     #[test]

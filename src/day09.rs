@@ -118,8 +118,8 @@ mod tests {
 
     #[test]
     fn evaluate_nested_complex() {
-        // ((1 + 2) * (4 - Negate(1))) = 3 * 5 = 15
-        let expr = mul(add(num(1.0), num(2.0)), sub(num(4.0), neg(num(-1.0))));
+        // ((1 + 2) * (4 - Negate(1))) = 3 * (4 - (-1)) = 3 * 5 = 15
+        let expr = mul(add(num(1.0), num(2.0)), sub(num(4.0), neg(num(1.0))));
         assert_eq!(evaluate(&expr).unwrap(), 15.0);
     }
 

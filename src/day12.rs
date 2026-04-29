@@ -17,24 +17,22 @@ use std::cell::RefCell;
 /// A singly-linked list using reference counting for persistence.
 /// Lists can share tails: prepending to a list creates a new list without
 /// modifying the original.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConsList<T> {
     Nil,
     Cons(T, Rc<ConsList<T>>),
 }
 
 impl<T> ConsList<T> {
-    /// Creates an empty list.
+    /// Creates an empty list wrapped in Rc.
     pub fn new() -> Rc<Self> {
         todo!("Implement new")
     }
 
     /// Prepends a value to the front of the list, returning a new Rc.
-    /// The original list is untouched (structural sharing).
-    pub fn prepend(&self, value: T) -> Rc<Self>
-    where
-        T: Clone,
-    {
+    /// The original list is untouched (structural sharing via Rc::clone).
+    /// This is a static method, called as `ConsList::prepend(&list, value)`.
+    pub fn prepend(list: &Rc<Self>, value: T) -> Rc<Self> {
         todo!("Implement prepend")
     }
 
@@ -103,8 +101,7 @@ impl SharedCounter {
 // ── Part 3: MyBox ────────────────────────────────────────────────────────────
 
 /// A simple smart pointer that behaves like Box<T>.
-/// Implements Deref so you can use `*mybox` to access the inner value,
-/// and Drop to print a message when the value is freed.
+/// Implements Deref so you can use `*mybox` to access the inner value.
 pub struct MyBox<T> {
     value: T,
 }
@@ -153,7 +150,7 @@ mod tests {
     #[test]
     fn conslist_prepend_and_head() {
         let list = ConsList::<i32>::new();
-        let list = list.prepend(42);
+        let list = ConsList::prepend(&list, 42);
         assert_eq!(list.head(), Some(&42));
         assert!(!list.is_empty());
         assert_eq!(list.len(), 1);
@@ -162,9 +159,9 @@ mod tests {
     #[test]
     fn conslist_multiple_prepends() {
         let mut list = ConsList::<i32>::new();
-        list = list.prepend(3);
-        list = list.prepend(2);
-        list = list.prepend(1);
+        list = ConsList::prepend(&list, 3);
+        list = ConsList::prepend(&list, 2);
+        list = ConsList::prepend(&list, 1);
         // list = [1, 2, 3]
         assert_eq!(list.head(), Some(&1));
         assert_eq!(list.len(), 3);
@@ -174,9 +171,9 @@ mod tests {
     #[test]
     fn conslist_tail_returns_rest() {
         let mut list = ConsList::<i32>::new();
-        list = list.prepend(3);
-        list = list.prepend(2);
-        list = list.prepend(1);
+        list = ConsList::prepend(&list, 3);
+        list = ConsList::prepend(&list, 2);
+        list = ConsList::prepend(&list, 1);
 
         let tail = list.tail().unwrap();
         assert_eq!(tail.head(), Some(&2));
@@ -186,14 +183,14 @@ mod tests {
     #[test]
     fn conslist_structural_sharing() {
         // Demonstrates Rc sharing: two lists share the same tail
-        let tail = ConsList::<i32>::new().prepend(3).prepend(2);
-        let list_a = tail.prepend(1);   // [1, 2, 3]
-        let list_b = tail.prepend(10);  // [10, 2, 3]
+        let tail = ConsList::prepend(&ConsList::prepend(&ConsList::<i32>::new(), 3), 2);
+        let list_a = ConsList::prepend(&tail, 1);  // [1, 2, 3]
+        let list_b = ConsList::prepend(&tail, 10); // [10, 2, 3]
 
         assert_eq!(list_a.to_vec(), vec![&1, &2, &3]);
         assert_eq!(list_b.to_vec(), vec![&10, &2, &3]);
 
-        // Both lists share the tail [2, 3]
+        // Both lists share the tail: Rc strong count reflects sharing
         assert_eq!(Rc::strong_count(&tail), 3); // tail + list_a + list_b
     }
 
