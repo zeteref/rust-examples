@@ -45,3 +45,7 @@ pub fn parse_csv(input: &str) -> Result<Vec<HashMap<String, String>>, CsvError> 
 
     Ok(result)
 }
+
+pub fn record_count(input: &str) -> Result<usize, CsvError> {
+    Ok(parse_csv(input)?.len())
+}

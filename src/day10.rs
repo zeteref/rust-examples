@@ -32,6 +32,16 @@ pub fn parse_csv(input: &str) -> Result<Vec<HashMap<String, String>>, CsvError> 
     todo!("Implement parse_csv")
 }
 
+/// Returns the number of records in the CSV input.
+/// Must use the `?` operator to propagate errors from `parse_csv`.
+///
+/// Example:
+///   let count = record_count("name,age\nAlice,30\nBob,25")?;
+///   assert_eq!(count, 2);
+pub fn record_count(input: &str) -> Result<usize, CsvError> {
+    todo!("Implement record_count using the ? operator")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,5 +160,20 @@ mod tests {
         let input = "a,b,c\n1,2,3";
         let result = parse_csv(input).unwrap();
         assert_eq!(result[0].get("a").unwrap(), "1");
+    }
+
+    #[test]
+    fn question_mark_propagates_parse_error() {
+        // Calling record_count on invalid input should propagate the
+        // CsvError through the ? operator, not panic.
+        let result = record_count("");
+        assert_eq!(result, Err(CsvError::EmptyInput));
+    }
+
+    #[test]
+    fn question_mark_returns_correct_count() {
+        let input = "name,age\nAlice,30\nBob,25";
+        let count = record_count(input).unwrap();
+        assert_eq!(count, 2);
     }
 }
